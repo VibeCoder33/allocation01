@@ -1,5 +1,3 @@
-// src/components/AllocationResults.tsx
-
 import React, { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Badge, BadgeProps } from "@/components/ui/badge";
 
 export interface AllocationResult {
   Candidate: string;
@@ -48,6 +46,17 @@ export const AllocationResults: React.FC<AllocationResultsProps> = ({
     );
   }, [results, searchTerm]);
 
+  // Helper function to determine badge color based on score
+  const getScoreBadgeVariant = (score: number): BadgeProps["variant"] => {
+    if (score > 75) {
+      return "default"; // Green in shadcn/ui
+    }
+    if (score > 50) {
+      return "secondary"; // Yellowish/Gray in shadcn/ui
+    }
+    return "destructive"; // Red in shadcn/ui
+  };
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -70,7 +79,7 @@ export const AllocationResults: React.FC<AllocationResultsProps> = ({
             <TableRow>
               <TableHead>Candidate</TableHead>
               <TableHead>Internship</TableHead>
-              <TableHead>Score</TableHead>
+              <TableHead className="text-center">Score</TableHead>
               <TableHead>Reason</TableHead>
               <TableHead>Category</TableHead>
             </TableRow>
@@ -78,12 +87,18 @@ export const AllocationResults: React.FC<AllocationResultsProps> = ({
           <TableBody>
             {filteredResults.map((result, index) => (
               <TableRow key={index}>
-                <TableCell>{result.Candidate}</TableCell>
+                <TableCell className="font-medium">
+                  {result.Candidate}
+                </TableCell>
                 <TableCell>{result.Internship}</TableCell>
-                <TableCell>{Math.round(result.Score)}</TableCell>
+                <TableCell className="text-center">
+                  <Badge variant={getScoreBadgeVariant(result.Score)}>
+                    {Math.round(result.Score)}
+                  </Badge>
+                </TableCell>
                 <TableCell>{result.Reason}</TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{result.Category}</Badge>
+                  <Badge variant="outline">{result.Category}</Badge>
                 </TableCell>
               </TableRow>
             ))}

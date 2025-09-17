@@ -1,83 +1,71 @@
+# backend/main.py
+
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import io
 from typing import List
-
-# Import your recommender logic
 from recommender import InternshipRecommender, RecommendationConfig
 
-# --- API Setup ---
 app = FastAPI(
     title="Internship Recommendation API",
     description="API for the AI-Based Smart Allocation Engine for PM Internship Scheme.",
-    version="2.1.0" # Version bump for new feature
+    version="3.0.0"  # Production version
 )
 
-# --- CORS Configuration ---
+# Production origins - replace with your frontend's deployed URL
+origins = [
+    "https://allocation01.vercel.app",
+    "http://localhost:5173", # Keep for local testing
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all for development
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# --- Data Loading (On Startup) ---
-# The internship listings are now loaded once when the server starts.
-try:
-    internships_df = pd.read_csv("internships.csv")
-    print("Internship data loaded successfully.")
-except FileNotFoundError:
-    print("FATAL ERROR: `internships.csv` not found. The API cannot function without it.")
-    internships_df = pd.DataFrame()
-
-
-# --- Recommender Initialization ---
 config = RecommendationConfig()
 recommender = InternshipRecommender(config)
 
-# --- API Endpoints ---
 @app.get("/")
 def read_root():
     """A simple health check endpoint."""
     return {"status": "Internship Recommender API is running!"}
 
-@app.post("/recommend-for-student")
-async def get_recommendations_for_student(
-    student_profile_file: UploadFile = File(...)
-):
-    """
-    Receives a single uploaded CSV file for a student profile,
-    and returns recommendations based on the pre-loaded internship data.
-    """
-    if internships_df.empty:
-        raise HTTPException(status_code=500, detail="Internship data is not available on the server.")
+@app.post("/upload/")
+async def create_allocations(files: List[UploadFile] = File(...)):
+    if len(files) != 2:
+        raise HTTPException(status_code=400, detail="Please upload exactly two files.")
 
-    # Read the uploaded student profile CSV
-    try:
-        student_content = await student_profile_file.read()
-        students_df = pd.read_csv(io.StringIO(student_content.decode('utf-8')))
-        
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error parsing student CSV file: {e}")
-
-    # Convert the student DataFrame into a list of profile dictionaries
-    # This allows the user to get recommendations for one or more students in a single file
-    student_profiles = students_df.to_dict(orient='records')
+    candidates_df = None
+    internships_df = None
 
     try:
-        # Generate recommendations for the entire batch of students in the file
-        all_recommendations_df = recommender.generate_batch_recommendations(student_profiles, internships_df)
-        
-        if all_recommendations_df.empty:
-            return []
+        for file in files:
+            content = await file.read()
+            if "candidate" in file.filename.lower():
+                candidates_df = pd.read_csv(io.StringIO(content.decode('utf-8')))
+            elif "internship" in file.filename.lower():
+                internships_df = pd.read_csv(io.StringIO(content.decode('utf-8')))
 
-        # Convert the final DataFrame to a list of dictionaries for the JSON response
-        return all_recommendations_df.to_dict(orient='records')
+        if candidates_df is None or internships_df is None:
+            raise HTTPException(status_code=400, detail="Ensure filenames contain 'candidate' and 'internship'.")
 
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {e}")
+        raise HTTPException(status_code=400, detail=f"Error parsing CSV files: {e}")
 
+    try:
+        student_profiles = candidates_df.to_dict(orient='records')
+        recommendations_df = recommender.generate_batch_recommendations(student_profiles, internships_df)
+
+        if recommendations_df.empty:
+            return {"allocations": []}
+
+        allocations = recommendations_df.to_dict(orient='records')
+        return {"allocations": allocations}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"An unexpected error occurred during recommendation: {e}")

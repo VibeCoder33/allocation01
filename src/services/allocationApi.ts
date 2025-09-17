@@ -6,6 +6,8 @@ import {
   AllocationResponse,
 } from "@/types";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 export const parseCSV = <T>(file: File): Promise<T[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
@@ -75,7 +77,7 @@ export const callAllocationAPI = async (
   formData.append("files", internshipsFile);
 
   try {
-    const response = await fetch("http://localhost:8000/upload/", {
+    const response = await fetch(`${API_URL}/upload/`, {
       method: "POST",
       body: formData,
     });
@@ -87,6 +89,8 @@ export const callAllocationAPI = async (
 
     return await response.json();
   } catch (error) {
-    throw new Error("API call failed: " + (error as Error).message);
+    const message =
+      error instanceof Error ? error.message : "An unknown error occurred";
+    throw new Error("API call failed: " + message);
   }
 };

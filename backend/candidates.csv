@@ -1,0 +1,11 @@
+id,name,skills,qualifications,location_preferences,sector_interests,category,past_internship
+1,Priya Sharma,"python,sql,data_analysis","B.Tech in Computer Science",delhi,technology,Rural,FALSE
+2,Rohan Gupta,"javascript,react,nodejs","MCA",mumbai,fintech,Urban,TRUE
+3,Anjali Singh,"java,spring,hibernate","B.E. in Information Technology",bangalore,ecommerce,Urban,FALSE
+4,Vikram Rathore,"python,pandas,numpy","M.Sc. in Statistics",pune,healthcare,Rural,FALSE
+5,Sneha Reddy,"marketing,seo,sem","MBA in Marketing",hyderabad,marketing,Urban,TRUE
+6,Amit Kumar,"c++,qt,embedded_systems","B.Tech in Electronics and Communication",chennai,iot,Rural,FALSE
+7,Pooja Desai,"ui,ux,figma","Bachelor of Design",ahmedabad,design,Urban,FALSE
+8,Rahul Verma,"sales,crm,communication","BBA",kolkata,sales,Urban,TRUE
+9,Natasha Khan,"python,tensorflow,pytorch","M.Tech in AI",bangalore,ai,Urban,FALSE
+10,Arjun Mehta,"javascript,vue,firebase","BCA",jaipur,edtech,Rural,FALSE

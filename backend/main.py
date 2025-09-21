@@ -25,12 +25,7 @@ class InternshipRecommender:
 
     def _calculate_similarity(self, text1, text2):
         try:
-            # Ensure inputs are strings
-            text1 = str(text1) if pd.notna(text1) else ""
-            text2 = str(text2) if pd.notna(text2) else ""
-            if not text1 and not text2:
-                return 0.0
-            tfidf_matrix = self.vectorizer.fit_transform([text1, text2])
+            tfidf_matrix = self.vectorizer.fit_transform([str(text1), str(text2)])
             return cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
         except Exception:
             return 0.0
@@ -38,7 +33,7 @@ class InternshipRecommender:
     def _calculate_score(self, candidate, internship):
         skills_score = self._calculate_similarity(candidate.get('skills', ''), internship.get('required_skills', ''))
         qual_score = self._calculate_similarity(candidate.get('qualifications', ''), internship.get('qualifications', ''))
-        loc_score = 1 if str(candidate.get('location_preferences', '')).lower() == str(internship.get('location', '')).lower() else 0
+        loc_score = 1 if candidate.get('location_preferences', '').lower() == internship.get('location', '').lower() else 0
         interests_score = self._calculate_similarity(candidate.get('sector_interests', ''), internship.get('sector', ''))
 
         base_score = (skills_score * self.config.SKILLS_WEIGHT +
@@ -47,13 +42,13 @@ class InternshipRecommender:
                       interests_score * self.config.INTERESTS_WEIGHT)
 
         # Apply bonuses and penalties
-        reason = f"Base score ({base_score:.2f}) from factors."
+        reason = f"Base score ({base_score:.2f}) from skills, qualifications, location, and interests."
         if str(candidate.get('category', '')).strip().lower() == 'rural':
             base_score += self.config.RURAL_BONUS
-            reason += f" Rural bonus (+{self.config.RURAL_BONUS})."
+            reason += f" Rural bonus (+{self.config.RURAL_BONUS}) applied."
         if str(candidate.get('past_internship', '')).strip().lower() == 'true':
             base_score -= self.config.PAST_INTERNSHIP_PENALTY
-            reason += f" Past internship penalty (-{self.config.PAST_INTERNSHIP_PENALTY})."
+            reason += f" Past internship penalty (-{self.config.PAST_INTERNSHIP_PENALTY}) applied."
         
         # Ensure score is within [0, 1]
         final_score = np.clip(base_score, 0, 1)
@@ -68,7 +63,7 @@ class InternshipRecommender:
             scores = []
             for _, internship in available_internships.iterrows():
                 if internship['capacity'] > 0:
-                    score, reason = self._calculate_score(candidate.to_dict(), internship.to_dict())
+                    score, reason = self._calculate_score(candidate, internship)
                     scores.append((score, reason, internship))
             
             if scores:
@@ -84,20 +79,20 @@ class InternshipRecommender:
                     "Location": best_internship.get('location', 'N/A')
                 })
                 
-                internship_idx = available_internships[available_internships['id'] == best_internship['id']].index
-                if not internship_idx.empty:
-                    available_internships.loc[internship_idx, 'capacity'] -= 1
+                internship_idx = available_internships.index[available_internships['id'] == best_internship['id']]
+                available_internships.loc[internship_idx, 'capacity'] -= 1
 
         return sorted(allocations, key=lambda x: x['Score'], reverse=True)
 
 # --- FastAPI App ---
 app = FastAPI()
 
-# Updated origins list to include the one from the error message
+# IMPORTANT: Add your deployed frontend URLs here
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "http://localhost:8080", # Added this line
+    "https://allocation01.vercel.app", # Your Vercel frontend URL
+    "https://allocation01.onrender.com", # Your Render backend URL
 ]
 
 app.add_middleware(
@@ -121,7 +116,7 @@ async def create_allocations(candidates: UploadFile = File(...), internships: Up
         candidates_content = await candidates.read()
         internships_content = await internships.read()
         
-        # Fill NaN values to prevent errors during processing
+        # Proactively handle potential empty cells in CSV
         candidates_df = pd.read_csv(io.StringIO(candidates_content.decode('utf-8'))).fillna('')
         internships_df = pd.read_csv(io.StringIO(internships_content.decode('utf-8'))).fillna('')
         
@@ -134,5 +129,5 @@ async def create_allocations(candidates: UploadFile = File(...), internships: Up
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
-# To run the server, use the command: uvicorn main:app --reload --port 5000
+# To run the server locally: uvicorn main:app --reload --port 5000
 

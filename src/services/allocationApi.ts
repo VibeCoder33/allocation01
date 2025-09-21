@@ -1,35 +1,28 @@
-import { Allocation, AllocationResponse } from "../types";
+import { Allocation } from "@/types";
+
+// Use an environment variable for the API base URL.
+// It will default to the local server if the variable is not set.
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:5000";
 
 export const runAllocation = async (
-  candidateFile: File,
-  internshipFile: File
+  candidatesFile: File,
+  internshipsFile: File
 ): Promise<Allocation[]> => {
   const formData = new FormData();
-  formData.append("candidates", candidateFile);
-  formData.append("internships", internshipFile);
+  formData.append("candidates", candidatesFile);
+  formData.append("internships", internshipsFile);
 
-  try {
-    const response = await fetch("http://127.0.0.1:5000/allocate", {
-      method: "POST",
-      body: formData,
-    });
+  const response = await fetch(`${API_BASE_URL}/allocate`, {
+    method: "POST",
+    body: formData,
+  });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || "An unknown error occurred");
-    }
-
-    const data: AllocationResponse = await response.json();
-    return data.allocations;
-  } catch (error) {
-    console.error("Error running allocation:", error);
-    if (error instanceof Error) {
-      throw new Error(
-        error.message || "Failed to connect to the allocation service."
-      );
-    }
-    throw new Error(
-      "An unknown error occurred while connecting to the service."
-    );
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.detail || "An unknown error occurred");
   }
+
+  const result = await response.json();
+  return result.allocations;
 };

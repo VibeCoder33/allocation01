@@ -2,7 +2,7 @@ import { useState } from "react";
 import { FileUpload } from "./components/FileUpload";
 import { AllocationResults } from "./components/AllocationResults";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
-import { Allocation } from "./types";
+import { Allocation, Candidate, Internship } from "./types";
 import { AnimatePresence } from "framer-motion";
 
 type View = "upload" | "results" | "analytics";
@@ -10,16 +10,26 @@ type View = "upload" | "results" | "analytics";
 function App() {
   const [view, setView] = useState<View>("upload");
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [internships, setInternships] = useState<Internship[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAllocationsGenerated = (data: Allocation[]) => {
-    setAllocations(data);
+  const handleAllocationsGenerated = (data: {
+    allocations: Allocation[];
+    candidates: Candidate[];
+    internships: Internship[];
+  }) => {
+    setAllocations(data.allocations);
+    setCandidates(data.candidates);
+    setInternships(data.internships);
     setError(null);
     setView("results");
   };
 
   const handleReset = () => {
     setAllocations([]);
+    setCandidates([]);
+    setInternships([]);
     setError(null);
     setView("upload");
   };
@@ -40,6 +50,8 @@ function App() {
           <AnalyticsDashboard
             key="analytics"
             allocations={allocations}
+            candidates={candidates}
+            internships={internships}
             onBack={() => setView("results")}
           />
         );
@@ -57,7 +69,7 @@ function App() {
   };
 
   return (
-    <main className="relative min-h-screen w-full bg-slate-900 text-white flex items-center justify-center p-4 overflow-hidden">
+    <main className="relative min-h-screen w-full text-white flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden">
       <div className="blob-container" aria-hidden="true">
         <div className="blob blob-1"></div>
         <div className="blob blob-2"></div>

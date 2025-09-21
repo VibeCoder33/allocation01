@@ -1,28 +1,47 @@
 import React, { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Allocation } from "@/types";
+import { Allocation, Candidate, Internship } from "@/types";
 import { runAllocation } from "@/services/allocationApi";
 import { Loader2, AlertCircle, UploadCloud, FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
+import Papa from "papaparse";
 
 interface FileUploadProps {
-  onAllocationsGenerated: (data: Allocation[]) => void;
+  onAllocationsGenerated: (data: {
+    allocations: Allocation[];
+    candidates: Candidate[];
+    internships: Internship[];
+  }) => void;
   onGenerationError: (message: string) => void;
   error: string | null;
 }
+
+// Generic function to parse a CSV file
+const parseCsvFile = <T,>(file: File): Promise<T[]> => {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        resolve(results.data as T[]);
+      },
+      error: (error) => {
+        reject(error);
+      },
+    });
+  });
+};
 
 function FileDropZone({
   file,
   setFile,
   title,
-  inputId,
 }: {
   file: File | null;
   setFile: (file: File | null) => void;
   title: string;
-  inputId: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -43,7 +62,6 @@ function FileDropZone({
       className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-500 rounded-lg bg-white/5 hover:bg-white/10 hover:border-purple-400 transition-colors duration-300 cursor-pointer relative"
     >
       <input
-        id={inputId}
         ref={inputRef}
         type="file"
         accept=".csv"
@@ -86,8 +104,16 @@ export function FileUpload({
     setIsLoading(true);
     onGenerationError(""); // Clear previous errors
     try {
+      // First, run the allocation on the backend
       const allocations = await runAllocation(candidateFile, internshipFile);
-      onAllocationsGenerated(allocations);
+
+      // Concurrently, parse the CSVs on the frontend for analytics
+      const [candidates, internships] = await Promise.all([
+        parseCsvFile<Candidate>(candidateFile),
+        parseCsvFile<Internship>(internshipFile),
+      ]);
+
+      onAllocationsGenerated({ allocations, candidates, internships });
     } catch (err: any) {
       const errorMessage = err.message.includes("Failed to fetch")
         ? "Connection failed. Please ensure the backend server is running."
@@ -118,13 +144,11 @@ export function FileUpload({
                 file={candidateFile}
                 setFile={setCandidateFile}
                 title="Upload Candidates CSV"
-                inputId="candidates-file"
               />
               <FileDropZone
                 file={internshipFile}
                 setFile={setInternshipFile}
                 title="Upload Internships CSV"
-                inputId="internships-file"
               />
             </div>
             {error && (

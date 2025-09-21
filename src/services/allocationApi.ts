@@ -1,96 +1,35 @@
-import Papa from "papaparse";
-import {
-  Candidate,
-  Internship,
-  AllocationRequest,
-  AllocationResponse,
-} from "@/types";
+import { Allocation, AllocationResponse } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-
-export const parseCSV = <T>(file: File): Promise<T[]> => {
-  return new Promise((resolve, reject) => {
-    Papa.parse(file, {
-      complete: (results) => {
-        if (results.errors.length > 0) {
-          reject(new Error("CSV parsing failed: " + results.errors[0].message));
-          return;
-        }
-        resolve(results.data as T[]);
-      },
-      error: (error) => reject(error),
-      header: true,
-      skipEmptyLines: true,
-    });
-  });
-};
-
-export const generateMockAllocation = async (
-  candidatesFile: File,
-  internshipsFile: File
-): Promise<AllocationResponse> => {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-
-  try {
-    const candidates = await parseCSV<Candidate>(candidatesFile);
-    const internships = await parseCSV<Internship>(internshipsFile);
-
-    // Generate mock allocation results
-    const allocations = candidates
-      .slice(0, Math.min(candidates.length, 20))
-      .map((candidate, index) => {
-        const internship = internships[index % internships.length];
-        const score = Math.floor(Math.random() * 40) + 60; // 60-100 range
-
-        const reasons = [
-          "Strong skill match and location preference",
-          "Previous experience aligns well with requirements",
-          "Geographic proximity and skill compatibility",
-          "High aptitude score and relevant background",
-          "Optimal fit based on capacity and skills",
-        ];
-
-        return {
-          Candidate: candidate.name,
-          Internship: internship?.title || "Software Development Intern",
-          Score: score,
-          Reason: reasons[Math.floor(Math.random() * reasons.length)],
-          Category: candidate.category,
-        };
-      });
-
-    return { allocations };
-  } catch (error) {
-    throw new Error("Failed to process files: " + (error as Error).message);
-  }
-};
-
-// src/services/allocationApi.ts
-
-export const callAllocationAPI = async (
-  candidatesFile: File,
-  internshipsFile: File
-): Promise<AllocationResponse> => {
+export const runAllocation = async (
+  candidateFile: File,
+  internshipFile: File
+): Promise<Allocation[]> => {
   const formData = new FormData();
-  formData.append("files", candidatesFile);
-  formData.append("files", internshipsFile);
+  formData.append("candidates", candidateFile);
+  formData.append("internships", internshipFile);
 
   try {
-    const response = await fetch(`${API_URL}/upload/`, {
+    const response = await fetch("http://127.0.0.1:5000/allocate", {
       method: "POST",
       body: formData,
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.detail || "Allocation API call failed");
+      throw new Error(errorData.error || "An unknown error occurred");
     }
 
-    return await response.json();
+    const data: AllocationResponse = await response.json();
+    return data.allocations;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "An unknown error occurred";
-    throw new Error("API call failed: " + message);
+    console.error("Error running allocation:", error);
+    if (error instanceof Error) {
+      throw new Error(
+        error.message || "Failed to connect to the allocation service."
+      );
+    }
+    throw new Error(
+      "An unknown error occurred while connecting to the service."
+    );
   }
 };

@@ -27,5 +27,9 @@ export interface AllocationResponse {
     Score: number;
     Reason: string;
     Category?: string;
+    Location?: string;
   }>;
 }
+
+// A single, reusable type for one allocation entry.
+export type Allocation = AllocationResponse["allocations"][0];

@@ -1,22 +1,103 @@
-# backend/main.py
-
-from fastapi import FastAPI, HTTPException, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+from pydantic import BaseModel
 import io
-from typing import List
-from recommender import InternshipRecommender, RecommendationConfig
+import numpy as np
 
-app = FastAPI(
-    title="Internship Recommendation API",
-    description="API for the AI-Based Smart Allocation Engine for PM Internship Scheme.",
-    version="3.0.0"  # Production version
-)
+# --- Configuration ---
+class RecommendationConfig:
+    SKILLS_WEIGHT = 0.5
+    QUALIFICATIONS_WEIGHT = 0.3
+    LOCATION_WEIGHT = 0.1
+    INTERESTS_WEIGHT = 0.1
+    RURAL_BONUS = 0.05
+    CATEGORY_BONUS = 0.05
+    PAST_INTERNSHIP_PENALTY = 0.1
 
-# Production origins - replace with your frontend's deployed URL
+# --- Recommender Logic ---
+class InternshipRecommender:
+    def __init__(self, config: RecommendationConfig):
+        self.config = config
+        self.vectorizer = TfidfVectorizer(stop_words='english')
+
+    def _calculate_similarity(self, text1, text2):
+        try:
+            # Ensure inputs are strings
+            text1 = str(text1) if pd.notna(text1) else ""
+            text2 = str(text2) if pd.notna(text2) else ""
+            if not text1 and not text2:
+                return 0.0
+            tfidf_matrix = self.vectorizer.fit_transform([text1, text2])
+            return cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+        except Exception:
+            return 0.0
+
+    def _calculate_score(self, candidate, internship):
+        skills_score = self._calculate_similarity(candidate.get('skills', ''), internship.get('required_skills', ''))
+        qual_score = self._calculate_similarity(candidate.get('qualifications', ''), internship.get('qualifications', ''))
+        loc_score = 1 if str(candidate.get('location_preferences', '')).lower() == str(internship.get('location', '')).lower() else 0
+        interests_score = self._calculate_similarity(candidate.get('sector_interests', ''), internship.get('sector', ''))
+
+        base_score = (skills_score * self.config.SKILLS_WEIGHT +
+                      qual_score * self.config.QUALIFICATIONS_WEIGHT +
+                      loc_score * self.config.LOCATION_WEIGHT +
+                      interests_score * self.config.INTERESTS_WEIGHT)
+
+        # Apply bonuses and penalties
+        reason = f"Base score ({base_score:.2f}) from factors."
+        if str(candidate.get('category', '')).strip().lower() == 'rural':
+            base_score += self.config.RURAL_BONUS
+            reason += f" Rural bonus (+{self.config.RURAL_BONUS})."
+        if str(candidate.get('past_internship', '')).strip().lower() == 'true':
+            base_score -= self.config.PAST_INTERNSHIP_PENALTY
+            reason += f" Past internship penalty (-{self.config.PAST_INTERNSHIP_PENALTY})."
+        
+        # Ensure score is within [0, 1]
+        final_score = np.clip(base_score, 0, 1)
+        
+        return final_score, reason
+
+    def recommend(self, candidates_df, internships_df):
+        allocations = []
+        available_internships = internships_df.copy()
+        
+        for _, candidate in candidates_df.iterrows():
+            scores = []
+            for _, internship in available_internships.iterrows():
+                if internship['capacity'] > 0:
+                    score, reason = self._calculate_score(candidate.to_dict(), internship.to_dict())
+                    scores.append((score, reason, internship))
+            
+            if scores:
+                scores.sort(key=lambda x: x[0], reverse=True)
+                best_score, best_reason, best_internship = scores[0]
+                
+                allocations.append({
+                    "Candidate": candidate['name'],
+                    "Internship": best_internship['title'],
+                    "Score": best_score,
+                    "Reason": best_reason,
+                    "Category": candidate.get('category', 'N/A'),
+                    "Location": best_internship.get('location', 'N/A')
+                })
+                
+                internship_idx = available_internships[available_internships['id'] == best_internship['id']].index
+                if not internship_idx.empty:
+                    available_internships.loc[internship_idx, 'capacity'] -= 1
+
+        return sorted(allocations, key=lambda x: x['Score'], reverse=True)
+
+# --- FastAPI App ---
+app = FastAPI()
+
+# Updated origins list to include the one from the error message
 origins = [
-    "https://allocation01.vercel.app",
-    "http://localhost:5173", # Keep for local testing
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:8080", # Added this line
 ]
 
 app.add_middleware(
@@ -27,45 +108,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-config = RecommendationConfig()
-recommender = InternshipRecommender(config)
+class AllocationResponse(BaseModel):
+    allocations: list
 
 @app.get("/")
 def read_root():
-    """A simple health check endpoint."""
-    return {"status": "Internship Recommender API is running!"}
+    return {"message": "AI-Based Smart Allocation Engine Backend"}
 
-@app.post("/upload/")
-async def create_allocations(files: List[UploadFile] = File(...)):
-    if len(files) != 2:
-        raise HTTPException(status_code=400, detail="Please upload exactly two files.")
-
-    candidates_df = None
-    internships_df = None
-
+@app.post("/allocate", response_model=AllocationResponse)
+async def create_allocations(candidates: UploadFile = File(...), internships: UploadFile = File(...)):
     try:
-        for file in files:
-            content = await file.read()
-            if "candidate" in file.filename.lower():
-                candidates_df = pd.read_csv(io.StringIO(content.decode('utf-8')))
-            elif "internship" in file.filename.lower():
-                internships_df = pd.read_csv(io.StringIO(content.decode('utf-8')))
-
-        if candidates_df is None or internships_df is None:
-            raise HTTPException(status_code=400, detail="Ensure filenames contain 'candidate' and 'internship'.")
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error parsing CSV files: {e}")
-
-    try:
-        student_profiles = candidates_df.to_dict(orient='records')
-        recommendations_df = recommender.generate_batch_recommendations(student_profiles, internships_df)
-
-        if recommendations_df.empty:
-            return {"allocations": []}
-
-        allocations = recommendations_df.to_dict(orient='records')
+        candidates_content = await candidates.read()
+        internships_content = await internships.read()
+        
+        # Fill NaN values to prevent errors during processing
+        candidates_df = pd.read_csv(io.StringIO(candidates_content.decode('utf-8'))).fillna('')
+        internships_df = pd.read_csv(io.StringIO(internships_content.decode('utf-8'))).fillna('')
+        
+        config = RecommendationConfig()
+        recommender = InternshipRecommender(config)
+        
+        allocations = recommender.recommend(candidates_df, internships_df)
+        
         return {"allocations": allocations}
-
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"An unexpected error occurred during recommendation: {e}")
+        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+# To run the server, use the command: uvicorn main:app --reload --port 5000
+

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { FileUpload } from "./components/FileUpload";
-import { AllocationResults } from "./components/AllocationResults";
-import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
-import { Allocation, Candidate, Internship } from "./types";
+import { FileUpload } from "@/components/FileUpload";
+import { AllocationResults } from "@/components/AllocationResults";
+import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
+import { Allocation, Candidate, Internship } from "@/types";
 import { AnimatePresence } from "framer-motion";
 
 type View = "upload" | "results" | "analytics";
@@ -69,11 +69,12 @@ function App() {
   };
 
   return (
-    <main className="relative min-h-screen w-full text-white flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden">
-      <div className="blob-container" aria-hidden="true">
-        <div className="blob blob-1"></div>
-        <div className="blob blob-2"></div>
-        <div className="blob blob-3"></div>
+    <main className="relative min-h-screen w-full bg-slate-900 text-white flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden">
+      <div className="shapes-container" aria-hidden="true">
+        <div className="shape shape-1"></div>
+        <div className="shape shape-2"></div>
+        <div className="shape shape-3"></div>
+        <div className="shape shape-4"></div>
       </div>
       <div className="z-10 w-full">
         <AnimatePresence mode="wait">{renderView()}</AnimatePresence>

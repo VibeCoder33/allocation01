@@ -50,7 +50,6 @@ class InternshipRecommender:
             base_score -= self.config.PAST_INTERNSHIP_PENALTY
             reason += f" Past internship penalty (-{self.config.PAST_INTERNSHIP_PENALTY}) applied."
         
-        # Ensure score is within [0, 1]
         final_score = np.clip(base_score, 0, 1)
         
         return final_score, reason
@@ -59,10 +58,13 @@ class InternshipRecommender:
         allocations = []
         available_internships = internships_df.copy()
         
+        # Ensure capacity is a numeric type, filling non-numeric with 0
+        available_internships['capacity'] = pd.to_numeric(available_internships['capacity'], errors='coerce').fillna(0).astype(int)
+
         for _, candidate in candidates_df.iterrows():
             scores = []
             for _, internship in available_internships.iterrows():
-                if int(internship['capacity']) > 0:
+                if internship['capacity'] > 0:
                     score, reason = self._calculate_score(candidate, internship)
                     scores.append((score, reason, internship))
             
@@ -87,12 +89,11 @@ class InternshipRecommender:
 # --- FastAPI App ---
 app = FastAPI()
 
-# IMPORTANT: Add your deployed frontend URLs here
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "https://allocation01.vercel.app",
-    "https://allocation01-git-main-vibecoder33s-projects.vercel.app", # Specific URL from your error log
+    "https://allocation01-git-main-vibecoder33s-projects.vercel.app",
 ]
 
 app.add_middleware(

@@ -102,8 +102,8 @@ const ParticleBackground = () => {
               particlesArray[b].x,
               particlesArray[b].y
             );
-            gradient.addColorStop(0, "rgba(219, 39, 119, 0.8)"); // Pink
-            gradient.addColorStop(1, "rgba(139, 92, 246, 0.8)"); // Purple
+            gradient.addColorStop(0, "rgba(219, 39, 120, 0.89)"); // Pink
+            gradient.addColorStop(1, "rgba(138, 92, 246, 1)"); // Purple
             ctx.strokeStyle = gradient;
             ctx.globalAlpha = 1 - distance / connectDistance;
             ctx.lineWidth = 0.8;

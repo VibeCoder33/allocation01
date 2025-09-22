@@ -94,6 +94,7 @@ origins = [
     "http://127.0.0.1:5173",
     "https://allocation01.vercel.app",
     "https://allocation01-git-main-vibecoder33s-projects.vercel.app",
+    "https://allocation01.onrender.com"
 ]
 
 app.add_middleware(

@@ -1,29 +1,6 @@
-export interface AllocationRequest {
-  candidates: Candidate[];
-  internships: Internship[];
-}
-
-export interface AllocationResponse {
-  allocations: Array<{
-    Candidate: string;
-    Internship: string;
-    Score: number;
-    Reason: string;
-    Category?: string;
-    Location?: string;
-  }>;
-}
-
-export interface Allocation {
-  Candidate: string;
-  Internship: string;
-  Score: number;
-  Reason: string;
-  Category?: string;
-  Location?: string;
-}
-
-// Represents a row from your candidates.csv
+/**
+ * Represents the structure of a single candidate from the CSV file.
+ */
 export interface Candidate {
   id: string;
   name: string;
@@ -31,20 +8,70 @@ export interface Candidate {
   qualifications: string;
   location_preferences: string;
   sector_interests: string;
-  category: string; // Contains values like 'Rural', 'Urban', 'SC', 'ST', etc.
-  past_internship: string; // 'TRUE' or 'FALSE'
-  // Add other candidate fields if necessary
+  category: string;
+  past_internship: string;
 }
 
-// Represents a row from your internships.csv
+/**
+ * Represents the structure of a single internship from the CSV file.
+ */
 export interface Internship {
   id: string;
   title: string;
   required_skills: string;
   qualifications: string;
   location: string;
-  organization: string;
-  description: string;
   sector: string;
   capacity: number;
+}
+
+/**
+ * Defines the structure for a single allocation record returned by the API.
+ */
+export interface Allocation {
+  Candidate: string;
+  Internship: string;
+  Score: number;
+  Reason: string;
+  Category: string;
+  Location: string;
+}
+
+/**
+ * Defines the structure for the API response from the /allocate endpoint.
+ */
+export interface AllocationResponse {
+  allocations: Allocation[];
+}
+
+/**
+ * Defines the properties (props) for the main FileUpload component wrapper.
+ */
+export interface FileUploadProps {
+  onAllocationsGenerated: (data: {
+    allocations: Allocation[];
+    candidates: Candidate[];
+    internships: Internship[];
+  }) => void;
+  onGenerationError: (message: string) => void;
+  error: string | null;
+}
+
+/**
+ * Defines the properties (props) for the AllocationResults component.
+ */
+export interface AllocationResultsProps {
+  allocations: Allocation[];
+  onViewAnalytics: () => void;
+  onReset: () => void;
+}
+
+/**
+ * Defines the properties (props) for the AnalyticsDashboard component.
+ */
+export interface AnalyticsDashboardProps {
+  allocations: Allocation[];
+  candidates: Candidate[];
+  internships: Internship[];
+  onBack: () => void;
 }

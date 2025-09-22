@@ -25,7 +25,12 @@ class InternshipRecommender:
 
     def _calculate_similarity(self, text1, text2):
         try:
-            tfidf_matrix = self.vectorizer.fit_transform([str(text1), str(text2)])
+            # Ensure inputs are strings
+            text1 = str(text1) if text1 is not None else ""
+            text2 = str(text2) if text2 is not None else ""
+            if not text1 and not text2:
+                return 0.0
+            tfidf_matrix = self.vectorizer.fit_transform([text1, text2])
             return cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
         except Exception:
             return 0.0
@@ -33,7 +38,7 @@ class InternshipRecommender:
     def _calculate_score(self, candidate, internship):
         skills_score = self._calculate_similarity(candidate.get('skills', ''), internship.get('required_skills', ''))
         qual_score = self._calculate_similarity(candidate.get('qualifications', ''), internship.get('qualifications', ''))
-        loc_score = 1 if candidate.get('location_preferences', '').lower() == internship.get('location', '').lower() else 0
+        loc_score = 1 if str(candidate.get('location_preferences', '')).lower() == str(internship.get('location', '')).lower() else 0
         interests_score = self._calculate_similarity(candidate.get('sector_interests', ''), internship.get('sector', ''))
 
         base_score = (skills_score * self.config.SKILLS_WEIGHT +
@@ -87,22 +92,31 @@ class InternshipRecommender:
         return sorted(allocations, key=lambda x: x['Score'], reverse=True)
 
 # --- FastAPI App ---
-app = FastAPI()
+app = FastAPI(
+    title="AI-Based Smart Allocation Engine",
+    description="An API for allocating candidates to internships based on skills and other criteria.",
+    version="1.0.0"
+)
 
+# --- CORS Configuration ---
+# These are the frontend URLs that are allowed to access this API.
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost:8080",
+    "http://192.168.0.100:8080/",
     "https://allocation01.vercel.app",
     "https://allocation01-git-main-vibecoder33s-projects.vercel.app",
-    "https://allocation01.onrender.com"
+    "http://127.0.0.1:8000",
+    # Add any other frontend URLs you might have
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
 
 class AllocationResponse(BaseModel):
@@ -110,17 +124,25 @@ class AllocationResponse(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"message": "AI-Based Smart Allocation Engine Backend"}
+    """ A simple endpoint to confirm the API is running. """
+    return {"message": "AI-Based Smart Allocation Engine Backend is active"}
 
 @app.post("/allocate", response_model=AllocationResponse)
 async def create_allocations(candidates: UploadFile = File(...), internships: UploadFile = File(...)):
+    """
+    This endpoint receives candidate and internship data (as CSV files),
+    and returns a list of recommended allocations.
+    """
     try:
+        # Read the uploaded files
         candidates_content = await candidates.read()
         internships_content = await internships.read()
         
+        # Convert file content to pandas DataFrames
         candidates_df = pd.read_csv(io.StringIO(candidates_content.decode('utf-8'))).fillna('')
         internships_df = pd.read_csv(io.StringIO(internships_content.decode('utf-8'))).fillna('')
         
+        # Initialize the recommender and get allocations
         config = RecommendationConfig()
         recommender = InternshipRecommender(config)
         
@@ -128,5 +150,5 @@ async def create_allocations(candidates: UploadFile = File(...), internships: Up
         
         return {"allocations": allocations}
     except Exception as e:
+        # If any error occurs, return a 500 error with details
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-

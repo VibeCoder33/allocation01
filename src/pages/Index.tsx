@@ -1,133 +1,111 @@
-import React, { useState } from 'react';
-import { FileUpload } from '@/components/FileUpload';
-import { AllocationResults, AllocationResult } from '@/components/AllocationResults';
-import { CategoryChart } from '@/components/CategoryChart';
-import { callAllocationAPI } from '@/services/allocationApi';
-import { useToast } from '@/hooks/use-toast';
-import { AlertCircle, Users, Target } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState } from "react";
+import { FileUpload } from "@/components/FileUpload";
+import { AllocationResults } from "@/components/AllocationResults";
+import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
+import { Toaster } from "@/components/ui/toaster";
+import { Allocation, Candidate, Internship } from "@/types";
+import { motion } from "framer-motion";
 
-const CANDIDATE_CATEGORIES = ['Urban', 'Rural', 'Tribal', 'SC', 'ST', 'OBC', 'PwD'];
+type View = "upload" | "results" | "analytics";
 
-const Index = () => {
-  const [results, setResults] = useState<AllocationResult[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string>('');
-  const { toast } = useToast();
+export default function Index() {
+  const [view, setView] = useState<View>("upload");
+  const [error, setError] = useState<string | null>(null);
 
-  const handleFilesUploaded = async (candidatesFile: File | null, internshipsFile: File | null) => {
-    if (!candidatesFile || !internshipsFile) {
-      setError('Please select both candidates and internships CSV files');
-      return;
-    }
+  // State to hold all data after generation
+  const [allocationData, setAllocationData] = useState<{
+    allocations: Allocation[];
+    candidates: Candidate[];
+    internships: Internship[];
+  } | null>(null);
 
-    setIsLoading(true);
-    setError('');
+  const handleAllocationsGenerated = (data: {
+    allocations: Allocation[];
+    candidates: Candidate[];
+    internships: Internship[];
+  }) => {
+    setAllocationData(data);
+    setView("results");
+    setError(null); // Clear any previous errors
+  };
 
-    try {
-      const response = await callAllocationAPI(candidatesFile, internshipsFile);
-      setResults(response.allocations);
-      
-      toast({
-        title: "Success!",
-        description: `Generated ${response.allocations.length} allocation results`,
-      });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-      setError(errorMessage);
-      
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const handleGenerationError = (message: string) => {
+    setError(message);
   };
 
   const handleReset = () => {
-    setResults([]);
-    setError('');
+    setAllocationData(null);
+    setError(null);
+    setView("upload");
+  };
+
+  const renderContent = () => {
+    switch (view) {
+      case "analytics":
+        if (allocationData) {
+          return (
+            <AnalyticsDashboard
+              {...allocationData}
+              onBack={() => setView("results")}
+            />
+          );
+        }
+        // Fallback to upload if data is missing
+        handleReset();
+        return null;
+
+      case "results":
+        if (allocationData) {
+          return (
+            <AllocationResults
+              allocations={allocationData.allocations}
+              onViewAnalytics={() => setView("analytics")}
+              onReset={handleReset}
+            />
+          );
+        }
+        // Fallback to upload if data is missing
+        handleReset();
+        return null;
+
+      case "upload":
+      default:
+        return (
+          <FileUpload
+            onAllocationsGenerated={handleAllocationsGenerated}
+            onGenerationError={handleGenerationError}
+            error={error}
+          />
+        );
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-subtle">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
-            <div className="p-3 rounded-full bg-gradient-primary shadow-glow">
-              <Target className="h-8 w-8 text-white" />
-            </div>
-          </div>
-          <h1 className="text-4xl font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent">
-            Internship Allocation Engine
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Upload candidate and internship data to generate optimal allocations using our intelligent matching algorithm
-          </p>
-        </div>
+    <>
+      <div className="min-h-screen bg-slate-900 text-white p-4 sm:p-6 lg:p-8 flex flex-col items-center justify-center">
+        <header className="text-center mb-10">
+          <motion.h1
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="text-5xl md:text-7xl font-bold tracking-tighter"
+          >
+            <span className="text-slate-200">Skill</span>
+            <span className="text-purple-400">Sync</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-3 text-lg text-slate-400"
+          >
+            AI-Based Smart Allocation Engine for PM Internship Scheme
+          </motion.p>
+        </header>
 
-        {/* Stats Cards */}
-        <div className="grid md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-card rounded-lg p-6 shadow-elegant border">
-            <div className="flex items-center space-x-3">
-              <Users className="h-8 w-8 text-primary" />
-              <div>
-                <h3 className="font-semibold text-lg">Total Allocations</h3>
-                <p className="text-3xl font-bold text-primary">{results.length}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-card rounded-lg p-6 shadow-elegant border">
-            <div className="flex items-center space-x-3">
-              <Target className="h-8 w-8 text-success" />
-              <div>
-                <h3 className="font-semibold text-lg">Average Score</h3>
-                <p className="text-3xl font-bold text-success">
-                  {results.length > 0 
-                    ? Math.round(results.reduce((sum, r) => sum + r.Score, 0) / results.length)
-                    : 0
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert className="mb-6 border-destructive/50 bg-destructive/10">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription className="text-destructive">{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* File Upload */}
-        {results.length === 0 && (
-          <div className="max-w-4xl mx-auto mb-8">
-            <FileUpload onFilesUploaded={handleFilesUploaded} isLoading={isLoading} />
-          </div>
-        )}
-
-        {/* Results */}
-        {results.length > 0 && (
-          <div className="space-y-8">
-            <div className="grid lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <AllocationResults results={results} onReset={handleReset} />
-              </div>
-              <div>
-                <CategoryChart results={results} categories={CANDIDATE_CATEGORIES} />
-              </div>
-            </div>
-          </div>
-        )}
+        <main className="w-full">{renderContent()}</main>
       </div>
-    </div>
+      <Toaster />
+    </>
   );
-};
-
-export default Index;
+}

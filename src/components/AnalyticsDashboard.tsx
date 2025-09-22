@@ -1,7 +1,12 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Allocation, Candidate, Internship } from "@/types";
+import {
+  Allocation,
+  Candidate,
+  Internship,
+  AnalyticsDashboardProps,
+} from "@/types";
 import { ArrowLeft } from "lucide-react";
 import {
   BarChart,
@@ -19,13 +24,6 @@ import {
 } from "recharts";
 import { motion } from "framer-motion";
 
-interface AnalyticsDashboardProps {
-  allocations: Allocation[];
-  candidates: Candidate[];
-  internships: Internship[];
-  onBack: () => void;
-}
-
 const COLORS = [
   "#8884d8",
   "#82ca9d",
@@ -37,6 +35,7 @@ const COLORS = [
   "#FF80A2",
 ];
 
+// Custom shape for the active sector in the PieChart
 const renderActiveShape = (props: any) => {
   const RADIAN = Math.PI / 180;
   const {
@@ -112,10 +111,14 @@ export function AnalyticsDashboard({
 
   // --- Chart Data Processing ---
 
-  // 1. Category Distribution
+  // 1. Category Distribution (excluding 'rural' and 'urban')
+  const excludedCategories = ["rural", "urban", "n/a", ""];
   const categoryDistribution = candidates.reduce((acc, candidate) => {
-    const category = candidate.category.trim() || "N/A";
-    acc[category] = (acc[category] || 0) + 1;
+    const category = (candidate.category || "").trim().toLowerCase();
+    if (category && !excludedCategories.includes(category)) {
+      const formattedCategory = category.toUpperCase();
+      acc[formattedCategory] = (acc[formattedCategory] || 0) + 1;
+    }
     return acc;
   }, {} as Record<string, number>);
   const categoryData = Object.keys(categoryDistribution).map((name) => ({
@@ -125,12 +128,11 @@ export function AnalyticsDashboard({
 
   // 2. Area Distribution (Rural/Urban)
   const areaDistribution = candidates.reduce((acc, candidate) => {
-    const area = ["rural", "urban"].includes(
-      candidate.category.trim().toLowerCase()
-    )
-      ? candidate.category
-      : "Other";
-    acc[area] = (acc[area] || 0) + 1;
+    const area = (candidate.category || "").trim().toLowerCase();
+    if (area === "rural" || area === "urban") {
+      const formattedArea = area.charAt(0).toUpperCase() + area.slice(1);
+      acc[formattedArea] = (acc[formattedArea] || 0) + 1;
+    }
     return acc;
   }, {} as Record<string, number>);
   const areaData = Object.keys(areaDistribution).map((name) => ({
@@ -242,9 +244,10 @@ export function AnalyticsDashboard({
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
                   }}
+                  itemStyle={{ color: "#fff" }}
                   labelStyle={{
-                    color: "#fff", // This makes the title/label white
-                    fontWeight: "bold", // Optional: makes it stand out
+                    color: "#fff",
+                    fontWeight: "bold",
                   }}
                 />
               </PieChart>
@@ -274,6 +277,17 @@ export function AnalyticsDashboard({
                     />
                   ))}
                 </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1a202c",
+                    border: "1px solid #4a5568",
+                  }}
+                  itemStyle={{ color: "#fff" }}
+                  labelStyle={{
+                    color: "#fff",
+                    fontWeight: "bold",
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </ChartCard>
@@ -304,9 +318,10 @@ export function AnalyticsDashboard({
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
                   }}
+                  itemStyle={{ color: "#fff" }}
                   labelStyle={{
-                    color: "#fff", // This makes the title/label white
-                    fontWeight: "bold", // Optional: makes it stand out
+                    color: "#fff",
+                    fontWeight: "bold",
                   }}
                 />
               </PieChart>
@@ -326,9 +341,10 @@ export function AnalyticsDashboard({
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
                   }}
+                  itemStyle={{ color: "#fff" }}
                   labelStyle={{
-                    color: "#fff", // This makes the title/label white
-                    fontWeight: "bold", // Optional: makes it stand out
+                    color: "#fff",
+                    fontWeight: "bold",
                   }}
                 />
                 <Bar dataKey="count" name="Candidates" fill="#8884d8" />
@@ -357,9 +373,10 @@ export function AnalyticsDashboard({
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
                   }}
+                  itemStyle={{ color: "#fff" }}
                   labelStyle={{
-                    color: "#fff", // This makes the title/label white
-                    fontWeight: "bold", // Optional: makes it stand out
+                    color: "#fff",
+                    fontWeight: "bold",
                   }}
                 />
                 <Legend />
@@ -381,9 +398,10 @@ export function AnalyticsDashboard({
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
                   }}
+                  itemStyle={{ color: "#fff" }}
                   labelStyle={{
-                    color: "#fff", // This makes the title/label white
-                    fontWeight: "bold", // Optional: makes it stand out
+                    color: "#fff",
+                    fontWeight: "bold",
                   }}
                 />
                 <Legend />

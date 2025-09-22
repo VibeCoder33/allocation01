@@ -1,39 +1,41 @@
 import React, { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Allocation, Candidate, Internship } from "@/types";
-import { runAllocation } from "@/services/allocationApi";
+import { Allocation, Candidate, Internship, FileUploadProps } from "@/types";
+import { allocate } from "@/services/allocationApi";
 import { Loader2, AlertCircle, UploadCloud, FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
 import Papa from "papaparse";
-import "../cyberpunk.css"; // Import the new cyberpunk styles
+import "../cyberpunk.css";
 
-interface FileUploadProps {
-  onAllocationsGenerated: (data: {
-    allocations: Allocation[];
-    candidates: Candidate[];
-    internships: Internship[];
-  }) => void;
-  onGenerationError: (message: string) => void;
-  error: string | null;
-}
-
-const parseCsvFile = <T,>(file: File): Promise<T[]> => {
+// Helper function to parse CSV files using PapaParse
+const parseCsvFile = <T extends object>(file: File): Promise<T[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: (results) => {
-        resolve(results.data as T[]);
+        // Ensure that the parsed data is treated as an array of objects
+        const data = results.data as T[];
+        if (data.length > 0 && "capacity" in data[0]) {
+          const typedData = (data as any[]).map((row) => ({
+            ...row,
+            capacity: Number(row.capacity) || 0,
+          }));
+          resolve(typedData as T[]);
+        } else {
+          resolve(data);
+        }
       },
-      error: (error) => {
-        reject(error);
+      error: (error: any) => {
+        reject(new Error(`CSV parsing error: ${error.message}`));
       },
     });
   });
 };
 
+// A dedicated component for the file drop zone UI
 function FileDropZone({
   file,
   setFile,
@@ -85,6 +87,7 @@ function FileDropZone({
   );
 }
 
+// The main FileUpload component that handles logic and state
 export function FileUpload({
   onAllocationsGenerated,
   onGenerationError,
@@ -105,7 +108,7 @@ export function FileUpload({
     onGenerationError(""); // Clear previous errors
     try {
       // First, run the allocation on the backend
-      const allocations = await runAllocation(candidateFile, internshipFile);
+      const allocations = await allocate(candidateFile, internshipFile);
 
       // Concurrently, parse the CSVs on the frontend for analytics
       const [candidates, internships] = await Promise.all([
@@ -133,14 +136,9 @@ export function FileUpload({
     >
       <Card className="w-full max-w-4xl mx-auto bg-slate-900/70 backdrop-blur-xl border-white/20 text-white shadow-2xl shadow-purple-500/10">
         <CardHeader>
-          <CardTitle className="text-6xl font-bold text-center py-4 cyberpunk-font">
-            <span className="cyber-glitch" data-text="SkillSync">
-              Skill Sync
-            </span>
+          <CardTitle className="text-2xl text-center font-semibold text-slate-300">
+            Upload Allocation Files
           </CardTitle>
-          <p className="text-center text-slate-400 pt-2 -mt-4">
-            AI-Based Smart Allocation Engine
-          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>

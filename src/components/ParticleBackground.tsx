@@ -14,9 +14,9 @@ const ParticleBackground = () => {
     if (!ctx) return;
 
     let particlesArray: Particle[] = [];
-    const numberOfParticles = 100;
-    const connectDistance = 150;
-    const mouseRadius = 130;
+    const numberOfParticles = 80;
+    const connectDistance = 400;
+    const mouseRadius = 180;
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -69,8 +69,8 @@ const ParticleBackground = () => {
 
       draw() {
         if (!ctx) return;
-        ctx.fillStyle = "rgba(250, 204, 21, 0.8)"; // Faded Yellow
-        ctx.shadowColor = "rgba(250, 204, 21, 1)";
+        ctx.fillStyle = "rgba(250, 204, 21, 0.66)"; // Faded Yellow
+        ctx.shadowColor = "rgba(149, 132, 67, 0.62)";
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -102,8 +102,8 @@ const ParticleBackground = () => {
               particlesArray[b].x,
               particlesArray[b].y
             );
-            gradient.addColorStop(0, "rgba(219, 39, 120, 0.89)"); // Pink
-            gradient.addColorStop(1, "rgba(138, 92, 246, 1)"); // Purple
+            gradient.addColorStop(0, "rgba(219, 39, 119, 0.8)"); // Pink
+            gradient.addColorStop(1, "rgba(139, 92, 246, 0.8)"); // Purple
             ctx.strokeStyle = gradient;
             ctx.globalAlpha = 1 - distance / connectDistance;
             ctx.lineWidth = 0.8;

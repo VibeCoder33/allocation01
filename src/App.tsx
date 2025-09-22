@@ -69,12 +69,20 @@ function App() {
   };
 
   return (
-    <main className="relative min-h-screen w-full bg-slate-900 text-white flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden">
-      <div className="shapes-container" aria-hidden="true">
-        <div className="shape shape-1"></div>
-        <div className="shape shape-2"></div>
-        <div className="shape shape-3"></div>
-        <div className="shape shape-4"></div>
+    <main className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden">
+      <div className="background-area" aria-hidden="true">
+        <ul className="floating-shapes">
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+        </ul>
       </div>
       <div className="z-10 w-full">
         <AnimatePresence mode="wait">{renderView()}</AnimatePresence>

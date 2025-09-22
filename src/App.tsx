@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { FileUpload } from "@/components/FileUpload";
-import { AllocationResults } from "@/components/AllocationResults";
-import { AnalyticsDashboard } from "@/components/AnalyticsDashboard";
-import { Allocation, Candidate, Internship } from "@/types";
+import { FileUpload } from "./components/FileUpload";
+import { AllocationResults } from "./components/AllocationResults";
+import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
+import { Allocation, Candidate, Internship } from "./types";
 import { AnimatePresence } from "framer-motion";
+import ParticleBackground from "./components/ParticleBackground";
 
 type View = "upload" | "results" | "analytics";
 
@@ -69,21 +70,8 @@ function App() {
   };
 
   return (
-    <main className="relative min-h-screen w-full flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden">
-      <div className="background-area" aria-hidden="true">
-        <ul className="floating-shapes">
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-        </ul>
-      </div>
+    <main className="relative min-h-screen w-full text-white flex items-center justify-center p-4 sm:p-6 md:p-8 overflow-hidden bg-transparent">
+      <ParticleBackground />
       <div className="z-10 w-full">
         <AnimatePresence mode="wait">{renderView()}</AnimatePresence>
       </div>

@@ -7,6 +7,7 @@ import { Loader2, AlertCircle, UploadCloud, FileText } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { motion } from "framer-motion";
 import Papa from "papaparse";
+import "../cyberpunk.css"; // Import the new cyberpunk styles
 
 interface FileUploadProps {
   onAllocationsGenerated: (data: {
@@ -18,7 +19,6 @@ interface FileUploadProps {
   error: string | null;
 }
 
-// Generic function to parse a CSV file
 const parseCsvFile = <T,>(file: File): Promise<T[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
@@ -131,11 +131,16 @@ export function FileUpload({
       exit={{ opacity: 0, y: -50 }}
       transition={{ duration: 0.5, ease: "easeInOut" }}
     >
-      <Card className="w-full max-w-4xl mx-auto bg-slate-800/60 backdrop-blur-xl border-white/20 text-white shadow-2xl shadow-purple-500/10">
+      <Card className="w-full max-w-4xl mx-auto bg-slate-900/70 backdrop-blur-xl border-white/20 text-white shadow-2xl shadow-purple-500/10">
         <CardHeader>
-          <CardTitle className="text-4xl font-bold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 py-2">
-            AI-Based Smart Allocation Engine
+          <CardTitle className="text-6xl font-bold text-center py-4 cyberpunk-font">
+            <span className="cyber-glitch" data-text="SkillSync">
+              Skill Sync
+            </span>
           </CardTitle>
+          <p className="text-center text-slate-400 pt-2 -mt-4">
+            AI-Based Smart Allocation Engine
+          </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>

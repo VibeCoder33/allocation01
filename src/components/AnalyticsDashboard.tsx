@@ -242,6 +242,10 @@ export function AnalyticsDashboard({
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
                   }}
+                  labelStyle={{
+                    color: "#fff", // This makes the title/label white
+                    fontWeight: "bold", // Optional: makes it stand out
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -300,6 +304,10 @@ export function AnalyticsDashboard({
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
                   }}
+                  labelStyle={{
+                    color: "#fff", // This makes the title/label white
+                    fontWeight: "bold", // Optional: makes it stand out
+                  }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -317,6 +325,10 @@ export function AnalyticsDashboard({
                   contentStyle={{
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
+                  }}
+                  labelStyle={{
+                    color: "#fff", // This makes the title/label white
+                    fontWeight: "bold", // Optional: makes it stand out
                   }}
                 />
                 <Bar dataKey="count" name="Candidates" fill="#8884d8" />
@@ -345,6 +357,10 @@ export function AnalyticsDashboard({
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
                   }}
+                  labelStyle={{
+                    color: "#fff", // This makes the title/label white
+                    fontWeight: "bold", // Optional: makes it stand out
+                  }}
                 />
                 <Legend />
                 <Bar dataKey="Capacity" stackId="a" fill="#8884d8" />
@@ -364,6 +380,10 @@ export function AnalyticsDashboard({
                   contentStyle={{
                     backgroundColor: "#1a202c",
                     border: "1px solid #4a5568",
+                  }}
+                  labelStyle={{
+                    color: "#fff", // This makes the title/label white
+                    fontWeight: "bold", // Optional: makes it stand out
                   }}
                 />
                 <Legend />

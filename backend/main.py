@@ -62,7 +62,7 @@ class InternshipRecommender:
         for _, candidate in candidates_df.iterrows():
             scores = []
             for _, internship in available_internships.iterrows():
-                if internship['capacity'] > 0:
+                if int(internship['capacity']) > 0:
                     score, reason = self._calculate_score(candidate, internship)
                     scores.append((score, reason, internship))
             
@@ -91,8 +91,8 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
-    "https://allocation01.vercel.app", # Your Vercel frontend URL
-    "https://allocation01.onrender.com", # Your Render backend URL
+    "https://allocation01.vercel.app",
+    "https://allocation01-git-main-vibecoder33s-projects.vercel.app", # Specific URL from your error log
 ]
 
 app.add_middleware(
@@ -116,7 +116,6 @@ async def create_allocations(candidates: UploadFile = File(...), internships: Up
         candidates_content = await candidates.read()
         internships_content = await internships.read()
         
-        # Proactively handle potential empty cells in CSV
         candidates_df = pd.read_csv(io.StringIO(candidates_content.decode('utf-8'))).fillna('')
         internships_df = pd.read_csv(io.StringIO(internships_content.decode('utf-8'))).fillna('')
         
@@ -128,6 +127,4 @@ async def create_allocations(candidates: UploadFile = File(...), internships: Up
         return {"allocations": allocations}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
-
-# To run the server locally: uvicorn main:app --reload --port 5000
 

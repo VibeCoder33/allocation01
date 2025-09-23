@@ -112,15 +112,16 @@ export function AnalyticsDashboard({
   // --- Chart Data Processing ---
 
   // 1. Category Distribution (excluding 'rural' and 'urban')
-  const excludedCategories = ["rural", "urban", "n/a", ""];
   const categoryDistribution = candidates.reduce((acc, candidate) => {
     const category = (candidate.category || "").trim().toLowerCase();
-    if (category && !excludedCategories.includes(category)) {
-      const formattedCategory = category.toUpperCase();
+    const socialCategory = category.replace(/rural|urban/g, "").trim();
+    if (socialCategory && socialCategory !== "n/a") {
+      const formattedCategory = socialCategory.toUpperCase();
       acc[formattedCategory] = (acc[formattedCategory] || 0) + 1;
     }
     return acc;
   }, {} as Record<string, number>);
+
   const categoryData = Object.keys(categoryDistribution).map((name) => ({
     name,
     value: categoryDistribution[name],
@@ -129,16 +130,19 @@ export function AnalyticsDashboard({
   // 2. Area Distribution (Rural/Urban)
   const areaDistribution = candidates.reduce((acc, candidate) => {
     const area = (candidate.category || "").trim().toLowerCase();
-    if (area === "rural" || area === "urban") {
-      const formattedArea = area.charAt(0).toUpperCase() + area.slice(1);
-      acc[formattedArea] = (acc[formattedArea] || 0) + 1;
+    if (area.includes("rural")) {
+      acc["Rural"] = (acc["Rural"] || 0) + 1;
+    } else if (area.includes("urban")) {
+      acc["Urban"] = (acc["Urban"] || 0) + 1;
     }
     return acc;
   }, {} as Record<string, number>);
+
   const areaData = Object.keys(areaDistribution).map((name) => ({
     name,
     value: areaDistribution[name],
   }));
+
 
   // 3. Allocation vs Unallocation
   const allocatedCount = allocations.length;
